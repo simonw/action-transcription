@@ -1,0 +1,12 @@
+name: Extract and transcribe audio with Whisper
+description: Uses Whisper to transcribe audio. This has a small cost associated with it, which depends on the length of the video.
+title: "Transcribe audio"
+labels: ["whisper"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: URL
+      description: URL to a video
+    validations:
+      required: true

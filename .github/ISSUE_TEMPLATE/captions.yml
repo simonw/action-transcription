@@ -1,0 +1,12 @@
+name: Extract captions
+description: Save the captions from a vieo
+title: "Extract captions"
+labels: ["captions"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: URL
+      description: URL to a video
+    validations:
+      required: true
