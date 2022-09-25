@@ -1,0 +1,4 @@
+yt-dlp
+webvtt-to-json>=0.2
+ttml-to-json>=0.2
+replicate

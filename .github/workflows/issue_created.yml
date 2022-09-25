@@ -1,0 +1,218 @@
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  issue_created:
+    runs-on: ubuntu-latest
+    if: contains('["OWNER", "COLLABORATOR", "MEMBER"]', github.event.issue.author_association)
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - run: sudo apt-get -y install ffmpeg
+        if: contains(github.event.issue.labels.*.name, 'whisper')
+      - uses: actions/github-script@v6
+        if: contains(github.event.issue.labels.*.name, 'whisper') || contains(github.event.issue.labels.*.name, 'captions')
+        name: Save metadata
+        with:
+          script: |
+            // yt-dlp 'https://www.youtube.com/watch?v=...' --skip-download --write-info-json
+            const child_process = require('child_process');
+            const fs = require('fs');
+            const body = context.payload.issue.body;
+            let match = body.match(/https?:\/\/[^\s]+/);
+            // Ignore github.com URLs
+            if (match && match[0].includes('https://github.com')) {
+              match = null;
+            }
+            if (!match) {
+              return;
+            }
+            const url = match[0];
+            const number = context.issue.number.toString();
+            child_process.spawnSync('mkdir', ['-p', `${number}/metadata-temp`]);
+            child_process.spawnSync('mkdir', ['-p', `${number}/metadata`]);
+            child_process.spawnSync('yt-dlp', [url, '--skip-download', '--write-info-json'], {
+              cwd: `${number}/metadata-temp`
+            });
+            // Rename to info.json
+            child_process.exec(`cat ${number}/metadata-temp/*.json | jq 'del(.automatic_captions)' -c > ${number}/metadata/info.json`);
+            child_process.exec(`rm ${number}/metadata-temp/*.json`);
+      - uses: actions/github-script@v6
+        name: Extract captions
+        # Only run this step if the issue is labeled with "captions"
+        if: contains(github.event.issue.labels.*.name, 'captions')
+        with:
+          script: |
+            const child_process = require('child_process');
+            const fs = require('fs');
+            const body = context.payload.issue.body;
+            let match = body.match(/https?:\/\/[^\s]+/);
+            // Ignore github.com URLs
+            if (match && match[0].includes('https://github.com')) {
+              match = null;
+            }
+            if (!match) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '🚫 No URL found in issue body.'
+              });
+              return;
+            }
+            const url = match[0];
+            // Create directory named after the issue number
+            const number = context.issue.number.toString();
+            child_process.spawnSync('mkdir', ['-p', number]);
+            // Create subdirectories subs, auto, whisper
+            child_process.spawnSync('mkdir', ['-p', `${number}/subs`]);
+            child_process.spawnSync('mkdir', ['-p', `${number}/auto`]);
+            let results = [];
+
+            function run(command, args, cwd) {
+              // Returns [status stdout, stderr]
+              const options = {
+                cwd: cwd,
+                encoding: 'utf-8',
+              };
+              const result = child_process.spawnSync(command, args, options);
+              return [result.status, result.stdout, result.stderr];
+            }
+            results.push(run('yt-dlp', ['--all-subs', '--skip-download', '--sub-format', 'ttml/vtt/best', url], `${number}/subs`));
+            // Did that create any files?
+            const files = child_process.spawnSync('ls', [`${number}/subs`]);
+            if (files.stdout.toString().trim() === '') {
+              // Use --write-auto-sub
+              results.push(run('yt-dlp', ['--write-auto-sub', '--skip-download', '--sub-format', 'ttml/vtt/best', url], `${number}/auto`));
+              // Now delete all but the `ru` and `en` files
+              const autoFiles = fs.readdirSync(`${number}/auto`);
+              autoFiles.forEach(file => {
+                if (!file.includes('.ru.') && !file.includes('.en.')) {
+                  fs.unlinkSync(`${number}/auto/${file}`);
+                }
+              });
+            }
+            const comment = results.map(result => {
+              return `\`\`\` + ${result[0]}\n${result[1]}\n${result[2]}\`\`\``;
+            }).join('\n');
+            // Post the output as a comment
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment,
+            });
+            // Generate a comment with the result from .ttml or .vtt files
+            for (const format of ['ttml', 'vtt']) {
+              const globber = await glob.create(`${number}/**/*.${format}`);
+              const foundFiles = await globber.glob();
+              if (foundFiles.length) {
+                // Pass it through XXXX-to-json
+                let args = [foundFiles[0]];
+                let command = null;
+                if (format === 'vtt') {
+                  args.push('--dedupe');
+                  command = 'webvtt-to-json';
+                } else {
+                  command = 'ttml-to-json';
+                }
+                const captions = JSON.parse(
+                  child_process.spawnSync(command, args, {
+                    encoding: 'utf-8',
+                  }
+                ).stdout);
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: '```\n' + captions.map(caption => caption.lines.join('\n')).join('\n') + '\n```',
+                });
+                break;
+              }
+            }
+            // Close the issue
+            github.rest.issues.update({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed'
+            });
+      - uses: actions/github-script@v6
+        name: Run it through whisper
+        # Only run this step if the issue is labeled with "whisper"
+        if: contains(github.event.issue.labels.*.name, 'whisper')
+        env:
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+        with:
+          script: |
+            const child_process = require('child_process');
+            const fs = require('fs');
+            const body = context.payload.issue.body;
+            let match = body.match(/https?:\/\/[^\s]+/);
+            // Ignore github.com URLs
+            if (match && match[0].includes('https://github.com')) {
+              match = null;
+            }
+            if (!match) {
+              return;
+            }
+            const url = match[0];
+            // Create directory named after the issue number
+            const number = context.issue.number.toString();
+            child_process.spawnSync('mkdir', ['-p', `${number}/whisper`]);
+            // Use yt-dlp to extract the audio
+            console.log(child_process.spawnSync('yt-dlp', [
+              '-x', url, '--audio-format', 'mp3', '--output', `${number}/whisper/audio.%(ext)s`
+            ], {
+              encoding: 'utf-8',
+            }).stdout);
+            console.log(child_process.spawnSync('find', [number], {
+              encoding: 'utf-8',
+            }).stdout);
+            // Run it through whisper
+            console.log(child_process.spawnSync('python', [
+              'transcribe_audio.py', `${number}/whisper/audio.mp3`, `${number}/whisper/transcription.json`
+            ], {
+              encoding: 'utf-8',
+            }).stderr);
+            // Now delete the audio file so we don't check it into the repo
+            fs.unlinkSync(`${number}/whisper/audio.mp3`);
+            // Load JSON from transcription.json
+            const transcription = JSON.parse(fs.readFileSync(`${number}/whisper/transcription.json`));
+            let comment = '';
+            if (transcription.detected_language) {
+              comment += `Language: ${transcription.detected_language}\n\n`;
+            }
+            if (transcription.transcription) {
+              comment += 'Transcription: `' + transcription.transcription + '`\n\n';
+            }
+            if (transcription.translation) {
+              comment += 'Translation: `' + transcription.translation + '`\n\n';
+            }
+            // Post the output as a comment
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            // Close the issue
+            github.rest.issues.update({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed'
+            });
+      - name: Commit and push
+        run: |-
+          git config user.name "Automated"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Refs #${{ github.event.issue.number }}" || exit 0
+          git pull --rebase
+          git push
