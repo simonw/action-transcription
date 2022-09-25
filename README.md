@@ -49,3 +49,5 @@ The results of the operation will be posted in a comment on the issue, and will 
 The pattern I am most excited about here is the way this shows that GitHub Issues can be used to create a hopefully not-too-intimidating interface for users, which can trigger real code to be run for free by the GitHub Actions platform.
 
 My next step with this project will be to add a custom search engine that can be used to search the transcripts of the videos. I intend to build this using [Datasette Lite](https://lite.datasette.io/).
+
+Original development took place in the issues in the [action-transcription-prototype](https://github.com/simonw/action-transcription-prototype) repository.
