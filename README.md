@@ -38,6 +38,10 @@ Issues must include the URL to the video you want to transcribe in the issue bod
 
 You can tag the issue with "captions" to extract captions from the video hosting provider (which is free), or "whisper" to transcribe the audio using Whisper (which costs money).
 
+In public repos, issue templates are provided which help further guide the user through the process. Here's a demo:
+
+![Animated demo. Click Issues, then New Issue, then select Get Started on the Capture captions menu option. Paste in a URL and click Submit new issue.](https://user-images.githubusercontent.com/9599/192150032-43b4eb68-aa39-449f-b932-f55a95c4611c.gif)
+
 The results of the operation will be posted in a comment on the issue, and will also be written to the GitHub repository for permanent storage.
 
 ## Additional Information
