@@ -1,0 +1,23 @@
+name: Ensure labels
+on: [push]
+
+jobs:
+  ensure_labels:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create labels
+      uses: actions/github-script@v6
+      with:
+        script: |
+          try {
+            await github.rest.issues.createLabel({
+              ...context.repo,
+              name: 'captions'
+            });
+            await github.rest.issues.createLabel({
+              ...context.repo,
+              name: 'whisper'
+            });
+          } catch(e) {
+            // Ignore if labels exist already
+          }
