@@ -19,6 +19,9 @@ If a video does not have captions, the tool can extract the audio from the video
 
 A demo version of this tool can be found at [simonw/action-transcription-demo](https://github.com/simonw/action-transcription-demo).
 
+- [Example issue with a VK video transcribed to English using Whisper](https://github.com/simonw/action-transcription-demo/issues/3)
+- [Example issue that extracted YouTube auto-generated English captions](https://github.com/simonw/action-transcription-demo/issues/4)
+
 ## Installation
 
 This GitHub repository acts as a "template repository" - you can create your own copy of the repository [using this form](https://github.com/simonw/action-transcription/generate).
