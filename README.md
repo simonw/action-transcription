@@ -15,6 +15,10 @@ If a video has captions, this tool can be used to retrieve and store those capti
 
 If a video does not have captions, the tool can extract the audio from the video and run it through [Whisper](https://openai.com/blog/whisper/) - a new, state-of-the-art speech-to-text tool from OpenAI.
 
+## Demo
+
+A demo version of this tool can be found at [simonw/action-transcription-demo](https://github.com/simonw/action-transcription-demo).
+
 ## Installation
 
 This GitHub repository acts as a "template repository" - you can create your own copy of the repository [using this form](https://github.com/simonw/action-transcription/generate).
