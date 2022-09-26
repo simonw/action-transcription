@@ -4,7 +4,6 @@
 
 Simon Willison - [@simonw](https://twitter.com/simonw) - [simonwillison.net](https://simonwillison.net/)
 
-
 ## Tool Description
 
 Action Transcription supports archiving and searching the transcripts of videos from multiple different video hosting platforms.
@@ -37,6 +36,8 @@ Usage of the tool is through filing GitHub Issues.
 Issues must include the URL to the video you want to transcribe in the issue body.
 
 You can tag the issue with "captions" to extract captions from the video hosting provider (which is free), or "whisper" to transcribe the audio using Whisper (which costs money).
+
+Note that "whisper" transcriptions only work on shorter videos: up to five minutes should be OK, but longer than that is likely to fail with a timeout error.
 
 In public repos, issue templates are provided which help further guide the user through the process. Here's a demo:
 
