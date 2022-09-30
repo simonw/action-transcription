@@ -4,6 +4,8 @@
 
 Simon Willison - [@simonw](https://twitter.com/simonw) - [simonwillison.net](https://simonwillison.net/)
 
+For more on this project: [A tool to run caption extraction against online videos using Whisper and GitHub Issues/Actions](https://simonwillison.net/2022/Sep/30/action-transcription/)
+
 ## Tool Description
 
 Action Transcription supports archiving and searching the transcripts of videos from multiple different video hosting platforms.
