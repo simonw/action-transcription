@@ -1,5 +1,5 @@
 name: Extract captions
-description: Save the captions from a vieo
+description: Save the captions from a video
 title: "Extract captions"
 labels: ["captions"]
 body:
